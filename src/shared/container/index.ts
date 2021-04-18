@@ -8,5 +8,19 @@ import ProductsRepository from '@modules/products/infra/typeorm/repositories/Pro
 
 import IOrdersRepository from '@modules/orders/repositories/IOrdersRepository';
 import OrdersRepository from '@modules/orders/infra/typeorm/repositories/OrdersRepository';
+import { CONTAINER_NAME_DEPENDENCIES } from '@shared/constants';
 
-// TODO
+container.registerSingleton<ICustomersRepository>(
+  CONTAINER_NAME_DEPENDENCIES.REPOSITORY.CUSTOMER,
+  CustomersRepository,
+);
+
+container.registerSingleton<IProductsRepository>(
+  CONTAINER_NAME_DEPENDENCIES.REPOSITORY.PRODUCT,
+  ProductsRepository,
+);
+
+container.registerSingleton<IOrdersRepository>(
+  CONTAINER_NAME_DEPENDENCIES.REPOSITORY.ORDER,
+  OrdersRepository,
+);

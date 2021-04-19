@@ -71,16 +71,14 @@ class CreateOrderService {
       productsToOrderIds,
     );
 
-    if (!productsInDatabase) {
+    if (!productsInDatabase || !productsInDatabase.length) {
       throw new AppError('Invalid products');
     }
 
-    const productsInDatabaseIds = productsToOrderIds.map(product => ({
-      id: product.id,
-    }));
+    const productsInDatabaseIds = productsToOrderIds.map(product => product.id);
 
     const isArrayEquals = await this.arrayEquals(
-      productsToOrderIds,
+      productsToOrderIds.map(product => product.id),
       productsInDatabaseIds,
     );
 
@@ -97,7 +95,9 @@ class CreateOrderService {
   ): Promise<boolean> {
     return (
       array1.length === array2.length &&
-      array1.every((value, index) => value === array2[index])
+      array1.every((value, index) => {
+        return value === array2[index];
+      })
     );
   }
 
@@ -115,13 +115,15 @@ class CreateOrderService {
       }
 
       if (productInDatabase.quantity < productToOrder.quantity) {
-        throw new AppError('Insuficient product quantities');
+        throw new AppError(
+          `Insuficient product quantities for product ${productInDatabase.id} `,
+        );
       }
 
       return {
         product_id: productToOrder.id,
         quantity: productToOrder.quantity,
-        price: productInDatabase.price * productToOrder.quantity,
+        price: productInDatabase.price,
       };
     });
   }

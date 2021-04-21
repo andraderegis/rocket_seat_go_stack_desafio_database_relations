@@ -39,40 +39,46 @@ class OrdersRepository implements IOrdersRepository {
   }: ICreateOrderTransaction): Promise<Order | undefined> {
     let savedOrder;
 
-    await getManager().transaction(async transactionEntityManager => {
-      savedOrder = await transactionEntityManager.save(order);
+    await getManager().transaction(
+      'READ COMMITTED',
+      async transactionEntityManager => {
+        savedOrder = await transactionEntityManager.save(order);
 
-      const { order_products } = savedOrder;
+        const { order_products } = savedOrder;
 
-      const productsInDatabase = await transactionEntityManager.find(Product, {
-        where: {
-          id: In(order_products.map(product => product.product_id)),
-        },
-        select: ['id', 'quantity'],
-      });
-
-      const productQuantityToUpdateAfterOrderedPromises = order_products.map(
-        orderedProduct => {
-          const productInDatabase = productsInDatabase.find(
-            product => product.id === orderedProduct.product_id,
-          );
-
-          if (!productInDatabase) {
-            return undefined;
-          }
-
-          return transactionEntityManager.update(
-            Product,
-            productInDatabase.id,
-            {
-              quantity: productInDatabase.quantity - orderedProduct.quantity,
+        const productsInDatabase = await transactionEntityManager.find(
+          Product,
+          {
+            where: {
+              id: In(order_products.map(product => product.product_id)),
             },
-          );
-        },
-      );
+            select: ['id', 'quantity'],
+          },
+        );
 
-      await Promise.all(productQuantityToUpdateAfterOrderedPromises);
-    });
+        const productQuantityToUpdateAfterOrderedPromises = order_products.map(
+          orderedProduct => {
+            const productInDatabase = productsInDatabase.find(
+              product => product.id === orderedProduct.product_id,
+            );
+
+            if (!productInDatabase) {
+              return undefined;
+            }
+
+            return transactionEntityManager.update(
+              Product,
+              productInDatabase.id,
+              {
+                quantity: productInDatabase.quantity - orderedProduct.quantity,
+              },
+            );
+          },
+        );
+
+        await Promise.all(productQuantityToUpdateAfterOrderedPromises);
+      },
+    );
 
     return savedOrder;
   }
